@@ -2,6 +2,7 @@ import argparse
 import os
 import numpy as np
 import math
+from tqdm import tqdm
 
 import torchvision.transforms as transforms
 from torchvision.utils import save_image
@@ -119,6 +120,7 @@ Tensor = torch.cuda.FloatTensor if cuda else torch.FloatTensor
 # ----------
 
 for epoch in range(opt.n_epochs):
+    progressbar = tqdm(range(len(dataloader)))
     for i, (imgs, _) in enumerate(dataloader):
 
         # Adversarial ground truths
@@ -160,11 +162,18 @@ for epoch in range(opt.n_epochs):
         d_loss.backward()
         optimizer_D.step()
 
-        print(
-            "[Epoch %d/%d] [Batch %d/%d] [D loss: %f] [G loss: %f]"
-            % (epoch, opt.n_epochs, i, len(dataloader), d_loss.item(), g_loss.item())
+        progressbar.set_description(
+            "[Epoch %d/%d] [D loss: %f] [G loss: %f]"
+            % (epoch, opt.n_epochs, d_loss.item(), g_loss.item())
         )
+        progressbar.update(1)
+
+        # print(
+        #     "[Epoch %d/%d] [Batch %d/%d] [D loss: %f] [G loss: %f]"
+        #     % (epoch, opt.n_epochs, i, len(dataloader), d_loss.item(), g_loss.item())
+        # )
 
         batches_done = epoch * len(dataloader) + i
         if batches_done % opt.sample_interval == 0:
             save_image(gen_imgs.data[:25], "images/%d.png" % batches_done, nrow=5, normalize=True)
+    progressbar.close()
